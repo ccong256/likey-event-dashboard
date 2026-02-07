@@ -54,7 +54,6 @@ export default function UploadPage() {
   const [eventPeriod, setEventPeriod] = useState<UploadState>(initialUploadState);
   const [beforePeriod, setBeforePeriod] = useState<UploadState>(initialUploadState);
   const [activeTab, setActiveTab] = useState<'event' | 'before'>('event');
-  const [isSaving, setIsSaving] = useState(false);
   const [dataStartDate, setDataStartDate] = useState('');
   const [dataEndDate, setDataEndDate] = useState('');
 
@@ -75,84 +74,6 @@ export default function UploadPage() {
       setEvent(data);
       setDataStartDate(data.start_date);
       setDataEndDate(data.end_date);
-    }
-  };
-
-  const saveDashboard = async () => {
-    if (!eventPeriod.data.length) return;
-
-    const dashboardName = prompt('대시보드 이름을 입력하세요 (예: 1일차 현황)');
-    if (dashboardName === null) return;
-
-    setIsSaving(true);
-
-    const stats = calculateStats(eventPeriod.data);
-    const ranking = eventPeriod.data
-      .sort((a, b) => b.gold - a.gold)
-      .map((item, index) => ({
-        rank: index + 1,
-        uid: item.uid,
-        nickname: item.nickname,
-        username: item.username,
-        gold: item.gold,
-        revenue: item.gold * 100,
-        giftCount: item.giftCount,
-        senderCount: item.senderCount,
-      }));
-
-    const summary = {
-      totalGold: stats.totalGold,
-      totalRevenue: stats.totalRevenue,
-      totalGiftCount: stats.totalGiftCount,
-      totalSenderCount: stats.totalSenderCount,
-      creatorCount: stats.creatorCount,
-    };
-
-    let beforeSummary = null;
-    let beforeRanking = null;
-
-    if (viewMode === 'analysis' && beforePeriod.data.length) {
-      const beforeStats = calculateStats(beforePeriod.data);
-      beforeSummary = {
-        totalGold: beforeStats.totalGold,
-        totalRevenue: beforeStats.totalRevenue,
-        totalGiftCount: beforeStats.totalGiftCount,
-        totalSenderCount: beforeStats.totalSenderCount,
-        creatorCount: beforeStats.creatorCount,
-      };
-      beforeRanking = beforePeriod.data
-        .sort((a, b) => b.gold - a.gold)
-        .map((item, index) => ({
-          rank: index + 1,
-          uid: item.uid,
-          nickname: item.nickname,
-          username: item.username,
-          gold: item.gold,
-          revenue: item.gold * 100,
-          giftCount: item.giftCount,
-          senderCount: item.senderCount,
-        }));
-    }
-
-    const { error } = await supabase.from('dashboards').insert({
-      event_id: eventId,
-      name: dashboardName || null,
-      dashboard_type: viewMode,
-      data_start_date: dataStartDate,
-      data_end_date: dataEndDate,
-      summary,
-      ranking,
-      before_summary: beforeSummary,
-      before_ranking: beforeRanking,
-    });
-
-    setIsSaving(false);
-
-    if (error) {
-      console.error('Error saving dashboard:', error);
-      alert('저장 중 오류가 발생했습니다.');
-    } else {
-      router.push(`/events/${eventId}`);
     }
   };
 
